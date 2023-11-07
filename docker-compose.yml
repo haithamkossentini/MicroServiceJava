@@ -1,0 +1,129 @@
+# DockerCompose-version 
+version: '3.3'
+
+# Define Services
+services:
+
+  # Eureka service
+  eureka:
+    image: sipacademy2024/serviceregistry
+    ports:
+      - "8761:8761" 
+    container_name: service_eureka_cont
+    restart: always
+    networks:
+      - amsmicroservicesapp
+
+  # Provider service
+  provider:
+    image: sipacademy2024/serviceprovider
+    ports:
+      - "8005:8005" 
+    container_name: service_provider_cont
+    depends_on:
+      - dbprovider 
+      - eureka
+    restart: always
+    environment:
+        SPRING_PROFILES_ACTIVE: docker
+        SPRING_DATASOURCE_URL: jdbc:mysql://dbprovider:3306/bdServiceProvider?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&createDatabaseIfNotExist=true
+        SPRING_DATASOURCE_USERNAME: provider
+        SPRING_DATASOURCE_PASSWORD: providerf7er7
+    networks:
+      - amsmicroservicesapp
+
+  
+  # Database Service Provider
+  dbprovider:
+    image: mysql:latest
+    container_name: service_db_provider_cont
+    volumes:
+      - provider_db_data:/var/lib/mysql 
+    restart: always
+    environment:
+      MYSQL_DATABASE: bdServiceProvider
+      MYSQL_USER: provider
+      MYSQL_PASSWORD: providerf7er7
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - amsmicroservicesapp
+
+    # Article service
+  article:
+    image: sipacademy2024/servicearticle
+    ports:
+      - "8002:8002" 
+    container_name: service_article_cont
+    restart: always
+    depends_on:
+      - dbarticle 
+      - eureka
+      - provider
+      #- proxy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://dbarticle:3306/bdServiceArticle?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: article
+      SPRING_DATASOURCE_PASSWORD: articlec87ef8
+    networks:
+      - amsmicroservicesapp
+
+  # Database Service Provider
+  dbarticle:
+    image: mysql:latest
+    container_name: service_db_article_cont
+    volumes:
+      - article_db_data:/var/lib/mysql 
+    restart: always
+    environment:
+      MYSQL_DATABASE: bdServiceArticle
+      MYSQL_USER: article
+      MYSQL_PASSWORD: articlec87ef8
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - amsmicroservicesapp
+
+     
+  # # Proxy Service 
+  # proxy:
+    # image: sipacademy2024/serviceproxy
+    # container_name: service_proxy_cont
+    # ports:
+      # - "9191:9191" 
+    # depends_on:
+      # - eureka
+    # restart: always
+    # environment:
+      # SPRING_PROFILES_ACTIVE: docker
+    # networks:
+      # - amsmicroservicesapp
+
+    # PhpMyadmin Service 
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: service_pmadmin_cont
+    restart: always
+    depends_on:
+      - dbprovider
+      - dbarticle
+    ports:
+      - 8077:80
+    environment:
+      - PMA_ARBITRARY=1
+    networks:
+      - amsmicroservicesapp
+
+
+
+
+# Volume
+volumes:
+  provider_db_data:
+  article_db_data:
+
+# Network
+networks:
+  amsmicroservicesapp:
+  
+
+
